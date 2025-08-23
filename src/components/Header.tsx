@@ -4,7 +4,7 @@ const Header = () => {
     const { theme, toggleTheme } = useTheme();
     
     return (
-        <header className="p-4 shadow-sm transition-colors duration-200 bg-[var(--background)] border-b border-[var(--secondary-text)]" >
+        <header className="p-4 px-6 shadow-sm transition-colors duration-200 bg-[var(--background)] border-b border-[var(--secondary-text)]" >
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-[var(--primary-text)]">EasyCode Portal</h1>
                 <button 
