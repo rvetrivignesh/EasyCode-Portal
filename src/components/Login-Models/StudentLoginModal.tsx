@@ -40,10 +40,10 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
   return (
     <div
       data-modal
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-200"
+      className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200"
       onClick={handleOverlayClick}
     >
-      <div className="bg-[var(--background)] rounded-lg shadow-2xl border border-[var(--secondary-text)] w-full max-w-md mx-4 transform transition-all duration-200 scale-100">
+      <div className="bg-[var(--background)] rounded-xl shadow-[0_8px_32px_0_rgba(44,62,80,0.25)] border border-[var(--secondary-text)] w-full max-w-md mx-4 transform transition-all duration-200 scale-100 focus-visible:ring-4 focus-visible:ring-[var(--highlight)] outline-none" tabIndex={-1}>
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-[var(--primary-text)]">
