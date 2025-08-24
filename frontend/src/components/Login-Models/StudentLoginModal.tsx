@@ -6,6 +6,9 @@ interface StudentLoginModalProps {
 }
 
 const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }) => {
+  const [branch, setBranch] = useState('');
+  const [year, setYear] = useState('');
+  const [semester, setSemester] = useState('');
   const [hallTicket, setHallTicket] = useState('');
   const [password, setPassword] = useState('');
 
@@ -25,8 +28,11 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Student login:', { hallTicket, password });
+    console.log('Student login:', { branch, year, semester, hallTicket, password });
     onClose();
+    setBranch('');
+    setYear('');
+    setSemester('');
     setHallTicket('');
     setPassword('');
   };
@@ -58,6 +64,71 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
           </div>
 
           <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label
+                htmlFor="branch"
+                className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
+              >
+                Branch
+              </label>
+              <select
+                id="branch"
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+                className="w-full px-3 py-2 border border-[var(--secondary-text)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--highlight)] focus:border-transparent bg-[var(--background)] text-[var(--primary-text)] transition-colors duration-200"
+                required
+              >
+                <option value="">Select Branch</option>
+                <option value="CSE">Computer Science Engineering</option>
+                <option value="CSM">CSE (ARTIFICIAL INTELLIGENCE & MACHINE LEARNING)</option>
+                <option value="CSD">CSE (DATA SCIENCE)</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label
+                  htmlFor="year"
+                  className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
+                >
+                  Year
+                </label>
+                <select
+                  id="year"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--secondary-text)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--highlight)] focus:border-transparent bg-[var(--background)] text-[var(--primary-text)] transition-colors duration-200"
+                  required
+                >
+                  <option value="">Year</option>
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="semester"
+                  className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
+                >
+                  Semester
+                </label>
+                <select
+                  id="semester"
+                  value={semester}
+                  onChange={(e) => setSemester(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--secondary-text)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--highlight)] focus:border-transparent bg-[var(--background)] text-[var(--primary-text)] transition-colors duration-200"
+                  required
+                >
+                  <option value="">Sem</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                </select>
+              </div>
+            </div>
+
             <div className="mb-4">
               <label
                 htmlFor="hall-ticket"
