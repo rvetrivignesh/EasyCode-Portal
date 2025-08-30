@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface AdminLoginModalProps {
   isOpen: boolean;
@@ -8,6 +9,8 @@ interface AdminLoginModalProps {
 const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
@@ -23,12 +26,27 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) =>
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Admin login:', { email, password });
-    onClose();
-    setEmail('');
-    setPassword('');
+    try {
+      const response = await fetch('http://localhost:3001/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        localStorage.setItem('isAuthenticated', 'true');
+        navigate('/admin');
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Invalid credentials');
+      }
+    } catch (error) {
+      setError('An error occurred. Please try again.');
+    }
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -59,6 +77,7 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) =>
           </div>
 
           <form onSubmit={handleSubmit}>
+            {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
             <div className="mb-6">
               <label
                 htmlFor="admin-email"
