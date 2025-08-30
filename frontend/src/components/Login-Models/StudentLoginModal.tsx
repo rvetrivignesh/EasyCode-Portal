@@ -10,7 +10,6 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
   const [year, setYear] = useState('');
   const [semester, setSemester] = useState('');
   const [hallTicket, setHallTicket] = useState('');
-  const [password, setPassword] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -28,13 +27,12 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Student login:', { branch, year, semester, hallTicket, password });
+    console.log('Student login:', { branch, year, semester, hallTicket });
     onClose();
     setBranch('');
     setYear('');
     setSemester('');
     setHallTicket('');
-    setPassword('');
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -147,25 +145,7 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
               />
             </div>
 
-            <div className="mb-6">
-              <label
-                htmlFor="student-password"
-                className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
-              >
-                Password
-              </label>
-              <input
-                type="password"
-                id="student-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-[var(--secondary-text)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--highlight)] focus:border-transparent bg-[var(--background)] text-[var(--primary-text)] transition-colors duration-200"
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-
-            <div className="flex space-x-3">
+            <div className="flex space-x-3 mt-6">
               <button
                 type="button"
                 onClick={onClose}
