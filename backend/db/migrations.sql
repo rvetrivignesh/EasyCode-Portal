@@ -15,11 +15,15 @@ CREATE TABLE IF NOT EXISTS staff (
 -- Students Table
 CREATE TABLE IF NOT EXISTS students (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    branch TEXT NOT NULL,
-    year INTEGER NOT NULL,
-    semester INTEGER NOT NULL,
-    hall_ticket TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
+    class_id INTEGER NOT NULL,
+    college_id TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    branch TEXT,
+    year INTEGER,
+    semester INTEGER,
+    password TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(class_id) REFERENCES classes(id) ON DELETE CASCADE
 );
 
 -- Classes Table
@@ -29,7 +33,8 @@ CREATE TABLE IF NOT EXISTS classes (
     batch TEXT NOT NULL,
     year INTEGER NOT NULL,
     semester INTEGER NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(branch, batch, year, semester)
 );
 
 -- Subjects Table (for each class)
