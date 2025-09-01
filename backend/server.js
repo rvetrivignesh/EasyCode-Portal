@@ -112,34 +112,52 @@ app.get('/api/classes', async (req, res) => {
 app.delete('/api/classes/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    console.log(`🗑️ Deleting class ${id} and all associated students...`);
+    
+    // Get count of students that will be deleted (for reporting)
+    const studentCount = await db.get(
+      'SELECT COUNT(*) as count FROM students WHERE class_id = ?', 
+      [id]
+    );
+    
+    // Delete the class (foreign key constraint will cascade delete students)
     await db.run('DELETE FROM classes WHERE id = ?', [id]);
-    res.json({ message: 'Class deleted successfully' });
+    
+    console.log(`✅ Deleted class ${id} and ${studentCount.count} associated students via foreign key cascade`);
+    
+    res.json({ 
+      message: 'Class deleted successfully', 
+      students_deleted: studentCount.count 
+    });
   } catch (error) {
     console.error('Error deleting class:', error);
     res.status(500).json({ message: 'Error deleting class' });
   }
 });
 
-// Get problems for a student's class
+// Get all problems for any student (class-independent)
 app.get('/api/problems/:studentId', async (req, res) => {
   try {
     const { studentId } = req.params;
     
-    // Get student's class_id
-    const student = await db.get('SELECT class_id FROM students WHERE id = ?', [studentId]);
+    // Verify student exists (but don't filter by class)
+    const student = await db.get('SELECT id, name, college_id FROM students WHERE id = ?', [studentId]);
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
     }
 
-    // Get all problems for the student's class
+    console.log(`📝 Fetching all problems for student: ${student.name} (${student.college_id})`);
+
+    // Get ALL problems from database regardless of class
     const problems = await db.all(`
       SELECT q.*, s.name as subject_name 
       FROM questions q
       JOIN subjects s ON q.subject_id = s.id
-      WHERE s.class_id = ?
       ORDER BY q.id ASC
-    `, [student.class_id]);
+    `);
     
+    console.log(`📊 Found ${problems.length} total problems for student`);
     res.json(problems);
   } catch (error) {
     console.error('Error fetching problems:', error);
@@ -192,6 +210,98 @@ app.get('/api/submissions/:studentId', async (req, res) => {
   } catch (error) {
     console.error('Error fetching submissions:', error);
     res.status(500).json({ message: 'Error fetching submissions' });
+  }
+});
+
+// Reload problems from CSV endpoint (Admin only)
+app.post('/api/reload-problems', async (req, res) => {
+  try {
+    // Import the CSV service dynamically
+    const { loadProblemsFromCSV, getSubjectsFromProblems } = await import('./services/csvService.js');
+    
+    console.log('📄 Admin requested to reload problems from CSV...');
+    
+    // Load problems from CSV file
+    const csvProblems = await loadProblemsFromCSV();
+    console.log(`📊 Loaded ${csvProblems.length} problems from CSV`);
+
+    // Get unique subjects from CSV
+    const subjects = getSubjectsFromProblems(csvProblems);
+    console.log(`📚 Found ${subjects.length} unique subjects`);
+
+    // Get existing classes
+    const classes = await db.all('SELECT * FROM classes');
+    
+    if (classes.length === 0) {
+      return res.status(400).json({ message: 'No classes found. Please create classes first.' });
+    }
+
+    // Create subjects for each class
+    const subjectMap = new Map();
+    let totalNewSubjects = 0;
+    let totalNewProblems = 0;
+    
+    for (const cls of classes) {
+      for (const subject of subjects) {
+        // Check if subject already exists for this class
+        const existingSubject = await db.get(
+          'SELECT id FROM subjects WHERE class_id = ? AND name = ?',
+          [cls.id, subject.name]
+        );
+
+        let subjectId;
+        if (existingSubject) {
+          subjectId = existingSubject.id;
+        } else {
+          const subjectResult = await db.run(
+            'INSERT INTO subjects (class_id, name) VALUES (?, ?)',
+            [cls.id, subject.name]
+          );
+          subjectId = subjectResult.lastID;
+          totalNewSubjects++;
+        }
+
+        const key = `${cls.id}-${subject.name}`;
+        subjectMap.set(key, subjectId);
+      }
+
+      // Add problems for this class
+      for (const problem of csvProblems) {
+        const key = `${cls.id}-${problem.subject_name}`;
+        const subjectId = subjectMap.get(key);
+        
+        if (subjectId) {
+          // Check if problem already exists
+          const existingProblem = await db.get(
+            'SELECT id FROM questions WHERE subject_id = ? AND question_text = ?',
+            [subjectId, problem.question_text]
+          );
+
+          if (!existingProblem) {
+            await db.run(
+              'INSERT INTO questions (subject_id, question_text, sample_input, sample_output) VALUES (?, ?, ?, ?)',
+              [subjectId, problem.question_text, problem.sample_input, problem.sample_output]
+            );
+            totalNewProblems++;
+          }
+        }
+      }
+    }
+
+    console.log(`✅ CSV Reload completed: ${totalNewSubjects} new subjects, ${totalNewProblems} new problems`);
+    
+    res.json({ 
+      message: 'Problems reloaded successfully from CSV',
+      stats: {
+        totalProblemsInCSV: csvProblems.length,
+        newSubjectsAdded: totalNewSubjects,
+        newProblemsAdded: totalNewProblems,
+        classes: classes.length
+      }
+    });
+  } catch (error) {
+    console.error('Error reloading problems from CSV:', error);
+    res.status(500).json({ message: 'Error reloading problems from CSV', error: error.message });
   }
 });
 
