@@ -141,7 +141,12 @@ const ProblemsList: React.FC<ProblemsListProps> = ({ studentId }) => {
       });
 
       if (response.ok) {
-        setSubmitMessage('✅ Solution submitted successfully!');
+        const result = await response.json();
+        if (result.is_update) {
+          setSubmitMessage('🔄 Previous submission replaced successfully!');
+        } else {
+          setSubmitMessage('✅ Solution submitted successfully!');
+        }
         setSolution('');
         setOutput('');
         setSelectedProblem(null);
@@ -297,7 +302,7 @@ const ProblemsList: React.FC<ProblemsListProps> = ({ studentId }) => {
           <div className="flex-shrink-0 p-4 border-b border-[var(--secondary-text)] bg-[var(--background)] sticky bottom-0">
             {submitMessage && (
               <div className={`mb-4 p-3 rounded text-sm ${
-                submitMessage.includes('✅') 
+                submitMessage.includes('✅') || submitMessage.includes('🔄')
                   ? 'bg-green-100 text-green-800' 
                   : 'bg-red-100 text-red-800'
               }`}>
