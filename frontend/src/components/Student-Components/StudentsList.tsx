@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 interface Student {
   id: number;
   class_id: string;
-  hallticket_no: string;
+  college_id: string;
   name: string;
 }
 
@@ -24,7 +24,7 @@ const StudentsList: React.FC<StudentsListProps> = ({ classId, className }) => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:8000/students?class_id=${classId}`);
+      const response = await fetch(`http://localhost:3001/api/students?class_id=${classId}`);
       if (response.ok) {
         const data = await response.json();
         setStudents(data);
@@ -83,13 +83,13 @@ const StudentsList: React.FC<StudentsListProps> = ({ classId, className }) => {
                     {student.name}
                   </h3>
                   <p className="text-xs text-[var(--secondary-text)]">
-                    {student.hallticket_no}
+                    {student.college_id}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-xs text-[var(--secondary-text)]">
-                <span>🎫</span>
-                <span>Hall Ticket: {student.hallticket_no}</span>
+                <span>🆔</span>
+                <span>College ID: {student.college_id}</span>
               </div>
             </div>
           ))}
