@@ -1,22 +1,15 @@
 "use strict";
 const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("ipcRenderer", {
-  on(...args) {
-    const [channel, listener] = args;
-    return electron.ipcRenderer.on(channel, (event, ...args2) => listener(event, ...args2));
+electron.contextBridge.exposeInMainWorld("electronAPI", {
+  exitApp: () => electron.ipcRenderer.send("exit-app"),
+  // logout returns a promise (ipcRenderer.invoke => ipcMain.handle)
+  logout: () => electron.ipcRenderer.invoke("logout"),
+  // callback registration for logout-done confirmation
+  onLogoutDone: (cb) => {
+    electron.ipcRenderer.on("logout-done", (event, payload) => cb(payload));
   },
-  off(...args) {
-    const [channel, ...omit] = args;
-    return electron.ipcRenderer.off(channel, ...omit);
-  },
-  send(...args) {
-    const [channel, ...omit] = args;
-    return electron.ipcRenderer.send(channel, ...omit);
-  },
-  invoke(...args) {
-    const [channel, ...omit] = args;
-    return electron.ipcRenderer.invoke(channel, ...omit);
+  // optional: receive messages from main
+  onMainMessage: (cb) => {
+    electron.ipcRenderer.on("main-process-message", (event, msg) => cb(msg));
   }
-  // You can expose other APTs you need here.
-  // ...
 });

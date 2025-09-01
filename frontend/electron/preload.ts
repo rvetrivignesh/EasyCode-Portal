@@ -1,24 +1,17 @@
-import { ipcRenderer, contextBridge } from 'electron'
+// preload.mjs
+import { contextBridge, ipcRenderer } from 'electron'
 
-// --------- Expose some API to the Renderer process ---------
-contextBridge.exposeInMainWorld('ipcRenderer', {
-  on(...args: Parameters<typeof ipcRenderer.on>) {
-    const [channel, listener] = args
-    return ipcRenderer.on(channel, (event, ...args) => listener(event, ...args))
+// Expose a safe API to the renderer
+contextBridge.exposeInMainWorld('electronAPI', {
+  exitApp: () => ipcRenderer.send('exit-app'),
+  // logout returns a promise (ipcRenderer.invoke => ipcMain.handle)
+  logout: () => ipcRenderer.invoke('logout'),
+  // callback registration for logout-done confirmation
+  onLogoutDone: (cb) => {
+    ipcRenderer.on('logout-done', (event, payload) => cb(payload))
   },
-  off(...args: Parameters<typeof ipcRenderer.off>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.off(channel, ...omit)
-  },
-  send(...args: Parameters<typeof ipcRenderer.send>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.send(channel, ...omit)
-  },
-  invoke(...args: Parameters<typeof ipcRenderer.invoke>) {
-    const [channel, ...omit] = args
-    return ipcRenderer.invoke(channel, ...omit)
-  },
-
-  // You can expose other APTs you need here.
-  // ...
+  // optional: receive messages from main
+  onMainMessage: (cb) => {
+    ipcRenderer.on('main-process-message', (event, msg) => cb(msg))
+  }
 })

@@ -1,4 +1,5 @@
-import { app, BrowserWindow } from 'electron'
+// main.ts (or main.mjs) - full main process file
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -6,50 +7,82 @@ import path from 'node:path'
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// The built directory structure
-//
-// ├─┬─┬ dist
-// │ │ └── index.html
-// │ │
-// │ ├─┬ dist-electron
-// │ │ ├── main.js
-// │ │ └── preload.mjs
-// │
 process.env.APP_ROOT = path.join(__dirname, '..')
 
-// 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
+// Vite / build layout
 export const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
 export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
-
 process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL ? path.join(process.env.APP_ROOT, 'public') : RENDERER_DIST
 
-let win: BrowserWindow | null
+let win: BrowserWindow | null = null
 
 function createWindow() {
+  const preloadPath = path.join(__dirname, 'preload.mjs')
+  console.log('[main] preload path ->', preloadPath)
+
   win = new BrowserWindow({
+    // fullscreen: true,
+    // kiosk: true,
+    // frame: false,
+    // alwaysOnTop: true,
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.mjs'),
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      // devTools: false, // keep false for production; enable for debug (see below)
     },
   })
 
-  // Test active push message to Renderer-process.
+  // Debug helper: enable dev tools if DEBUG_ELECTRON env var is 'true'
+  if (process.env.DEBUG_ELECTRON === 'true') {
+    win.webContents.openDevTools({ mode: 'detach' })
+    console.log('[main] open devtools for debugging')
+  }
+
   win.webContents.on('did-finish-load', () => {
-    win?.webContents.send('main-process-message', (new Date).toLocaleString())
+    console.log('[main] did-finish-load')
+    win?.webContents.send('main-process-message', new Date().toLocaleString())
+  })
+
+  // Prevent navigation
+  win.webContents.on('will-navigate', (event) => {
+    console.log('[main] prevented navigation to:', (event as any).url ?? 'unknown')
+    event.preventDefault()
+  })
+
+  // Block window.open
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    console.log('[main] blocked window.open to:', url)
+    return { action: 'deny' }
   })
 
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
   } else {
-    // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
 }
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+/* ---------------- IPC handlers ---------------- */
+
+ipcMain.on('exit-app', () => {
+  console.log('[main] exit-app received — quitting app')
+  // any main-process cleanup can be done here
+  app.quit()
+})
+
+ipcMain.handle('logout', async (event) => {
+  console.log('[main] logout invoked from renderer')
+  // main-process cleanup (if required) — e.g. clear files, close DB, etc.
+  // send confirmation back to renderer
+  event.sender.send('logout-done', { success: true })
+  return { success: true }
+})
+
+/* ---------------- app lifecycle ---------------- */
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
@@ -58,11 +91,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
+  if (BrowserWindow.getAllWindows().length === 0) createWindow()
 })
 
 app.whenReady().then(createWindow)
