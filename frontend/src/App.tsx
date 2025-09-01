@@ -2,8 +2,8 @@ import './App.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import WelcomePage from './pages/WelcomePage';
-import AdminDashboard from './pages/AdminDashboard';
-import ProtectedRoute from './components/ProtectedRoute';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import ProtectedRoute from './components/Admin-Components/ProtectedRoute';
 
 function App() {
   return (
