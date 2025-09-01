@@ -67,5 +67,6 @@ CREATE TABLE IF NOT EXISTS submissions (
     status TEXT CHECK(status IN ('pending','accepted','rejected')) DEFAULT 'pending',
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(student_id) REFERENCES students(id),
-    FOREIGN KEY(question_id) REFERENCES questions(id)
+    FOREIGN KEY(question_id) REFERENCES questions(id),
+    UNIQUE(student_id, question_id)
 );
