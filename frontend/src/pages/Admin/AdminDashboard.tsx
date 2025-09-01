@@ -27,11 +27,13 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[var(--background)]">
-      <SidePanel activeView={activeView} onViewChange={setActiveView} />
-      <div className="flex-1 overflow-auto">
-        <div className="p-8">
-          {renderContent()}
+    <div className="pt-20 min-h-screen bg-[var(--background)]">
+      <div className="flex h-screen">
+        <SidePanel activeView={activeView} onViewChange={setActiveView} />
+        <div className="flex-1 overflow-auto">
+          <div className="p-8">
+            {renderContent()}
+          </div>
         </div>
       </div>
     </div>
