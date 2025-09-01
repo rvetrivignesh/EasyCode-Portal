@@ -39,6 +39,7 @@ const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClose }) =>
 
       if (response.ok) {
         localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userType', 'admin');
         navigate('/admin');
       } else {
         const data = await response.json();

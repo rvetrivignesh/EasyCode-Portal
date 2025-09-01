@@ -15,5 +15,9 @@ export const initDB = async () => {
     filename: dbPath,
     driver: sqlite3.Database,
   });
+  
+  // Enable foreign key constraints (SQLite disables them by default)
+  await db.exec('PRAGMA foreign_keys = ON;');
+  
   return db;
 };
