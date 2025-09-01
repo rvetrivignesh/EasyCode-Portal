@@ -1,11 +1,23 @@
 import React from 'react';
 
-interface SidePanelProps {
-  activeView: 'problems' | 'submissions';
-  onViewChange: (view: 'problems' | 'submissions') => void;
+interface Student {
+  id: number;
+  college_id: string;
+  name: string;
+  class_id: number;
 }
 
-const SidePanel: React.FC<SidePanelProps> = ({ activeView, onViewChange }) => {
+interface StudentSidepanelProps {
+  student: Student;
+  activeTab: 'problems' | 'submissions';
+  setActiveTab: (tab: 'problems' | 'submissions') => void;
+}
+
+const StudentSidepanel: React.FC<StudentSidepanelProps> = ({ 
+  student, 
+  activeTab, 
+  setActiveTab
+}) => {
   const menuItems = [
     {
       id: 'problems' as const,
@@ -22,8 +34,10 @@ const SidePanel: React.FC<SidePanelProps> = ({ activeView, onViewChange }) => {
   ];
 
   return (
-    <div className="w-64 bg-[var(--background)] border-r border-[var(--secondary-text)] h-full">
-      <div className="p-6">
+    <div className="fixed left-0 top-0 w-64 h-full bg-[var(--background)] border-r border-[var(--secondary-text)] z-40 mt-10">
+      <div className="p-6 pt-20">
+        {/* Student Info */}
+
         <h2 className="text-xl font-bold text-[var(--primary-text)] mb-6">
           🎯 Student Panel
         </h2>
@@ -32,9 +46,9 @@ const SidePanel: React.FC<SidePanelProps> = ({ activeView, onViewChange }) => {
           {menuItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => onViewChange(item.id)}
+              onClick={() => setActiveTab(item.id)}
               className={`w-full text-left p-4 rounded-lg transition-all duration-200 ${
-                activeView === item.id
+                activeTab === item.id
                   ? 'bg-[var(--highlight)] text-white shadow-md'
                   : 'text-[var(--primary-text)] hover:bg-[var(--secondary-text)] hover:bg-opacity-20'
               }`}
@@ -44,7 +58,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ activeView, onViewChange }) => {
                 <div>
                   <div className="font-medium">{item.label}</div>
                   <div className={`text-xs mt-1 ${
-                    activeView === item.id 
+                    activeTab === item.id 
                       ? 'text-white text-opacity-80' 
                       : 'text-[var(--secondary-text)]'
                   }`}>
@@ -60,4 +74,4 @@ const SidePanel: React.FC<SidePanelProps> = ({ activeView, onViewChange }) => {
   );
 };
 
-export default SidePanel;
+export default StudentSidepanel;
