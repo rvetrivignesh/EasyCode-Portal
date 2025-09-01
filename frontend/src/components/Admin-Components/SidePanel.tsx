@@ -23,7 +23,7 @@ const SidePanel: React.FC<SidePanelProps> = ({ activeView, onViewChange }) => {
 
   return (
     <div className="w-64 bg-[var(--background)] border-r border-[var(--secondary-text)] h-full">
-      <div className="p-6">
+      <div className="p-6 pt-6">
         <h2 className="text-xl font-bold text-[var(--primary-text)] mb-6">
           🎯 Admin Panel
         </h2>
