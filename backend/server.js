@@ -174,14 +174,38 @@ app.post('/api/submit', async (req, res) => {
       return res.status(400).json({ message: 'Student ID, Question ID, and Code are required' });
     }
 
+    // Check if a submission already exists for this student and question
+    const existingSubmission = await db.get(
+      'SELECT id, submitted_at FROM submissions WHERE student_id = ? AND question_id = ?',
+      [student_id, question_id]
+    );
+
+    let message = 'Solution submitted successfully';
+    let isUpdate = false;
+
+    if (existingSubmission) {
+      // Delete the existing submission
+      await db.run(
+        'DELETE FROM submissions WHERE student_id = ? AND question_id = ?',
+        [student_id, question_id]
+      );
+      message = 'Previous submission replaced successfully';
+      isUpdate = true;
+      console.log(`🔄 Replaced existing submission ${existingSubmission.id} for student ${student_id}, question ${question_id}`);
+    }
+
+    // Insert the new submission
     const result = await db.run(
       'INSERT INTO submissions (student_id, question_id, code, output, status) VALUES (?, ?, ?, ?, ?)',
       [student_id, question_id, code, output || '', 'pending']
     );
 
+    console.log(`✅ ${isUpdate ? 'Updated' : 'Created'} submission ${result.lastID} for student ${student_id}, question ${question_id}`);
+
     res.status(201).json({ 
-      message: 'Solution submitted successfully',
-      submission_id: result.lastID
+      message: message,
+      submission_id: result.lastID,
+      is_update: isUpdate
     });
   } catch (error) {
     console.error('Error submitting solution:', error);
