@@ -132,7 +132,7 @@ const StudentSubmissions: React.FC<StudentSubmissionsProps> = ({ studentId }) =>
           {selectedSubmission.output && (
             <div>
               <h4 className="font-semibold text-[var(--primary-text)] mb-3">Output:</h4>
-              <div className="bg-gray-100 p-4 rounded-lg font-mono text-sm">
+              <div className="bg-gray-100 p-4  text-black rounded-lg font-mono text-sm">
                 {selectedSubmission.output}
               </div>
             </div>
