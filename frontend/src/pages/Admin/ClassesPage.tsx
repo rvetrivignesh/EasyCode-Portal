@@ -17,6 +17,7 @@ const ClassesPage: React.FC = () => {
   const [error, setError] = useState('');
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [studentsRefreshKey, setStudentsRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchClasses();
@@ -40,15 +41,30 @@ const ClassesPage: React.FC = () => {
 
   const deleteClass = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click event
-    if (window.confirm('Are you sure you want to delete this class?')) {
+    const classToDelete = classes.find(cls => cls.id === id);
+    const className = classToDelete ? `${classToDelete.branch} - Batch ${classToDelete.batch}` : `Class ${id}`;
+    
+    if (window.confirm(`Are you sure you want to delete ${className}? This will also delete all students in this class.`)) {
       try {
         const response = await fetch(`http://localhost:3001/api/classes/${id}`, {
           method: 'DELETE',
         });
+        
         if (response.ok) {
+          const result = await response.json();
           setClasses(classes.filter(cls => cls.id !== id));
+          
+          // Show success message with students deleted count
+          const studentsMessage = result.students_deleted > 0 
+            ? ` and ${result.students_deleted} students` 
+            : '';
+          setError(''); // Clear any previous errors
+          
+          // You could add a success state here, but for now we'll clear error
+          console.log(`✅ Deleted ${className}${studentsMessage}`);
         } else {
-          setError('Failed to delete class');
+          const errorData = await response.json();
+          setError(`Failed to delete class: ${errorData.message}`);
         }
       } catch (error) {
         setError('Could not connect to server');
@@ -73,8 +89,14 @@ const ClassesPage: React.FC = () => {
   };
 
   const handleUploadSuccess = () => {
+    console.log('🔄 handleUploadSuccess called, refreshing students list...');
     setShowUpload(false);
-    // Refresh is handled by StudentsList component
+    // Force StudentsList to refresh by changing the key
+    setStudentsRefreshKey(prev => {
+      const newKey = prev + 1;
+      console.log('🔑 Updated refresh key:', { oldKey: prev, newKey });
+      return newKey;
+    });
   };
 
   const getClassDisplayName = (cls: Class) => {
@@ -136,6 +158,7 @@ const ClassesPage: React.FC = () => {
           </button>
         </div>
         <StudentsList 
+          key={studentsRefreshKey}
           classId={selectedClass.id.toString()}
           className={getClassDisplayName(selectedClass)}
         />
