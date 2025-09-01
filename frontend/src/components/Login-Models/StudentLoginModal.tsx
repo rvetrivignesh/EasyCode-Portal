@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface StudentLoginModalProps {
   isOpen: boolean;
@@ -6,10 +7,10 @@ interface StudentLoginModalProps {
 }
 
 const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }) => {
-  const [branch, setBranch] = useState('');
-  const [year, setYear] = useState('');
-  const [semester, setSemester] = useState('');
-  const [hallTicket, setHallTicket] = useState('');
+  const [collegeId, setCollegeId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
@@ -25,14 +26,39 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Student login:', { branch, year, semester, hallTicket });
-    onClose();
-    setBranch('');
-    setYear('');
-    setSemester('');
-    setHallTicket('');
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:3001/api/student-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ college_id: collegeId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store student data in localStorage
+        localStorage.setItem('student', JSON.stringify(data.student));
+        localStorage.setItem('userType', 'student');
+        
+        // Navigate to student dashboard
+        navigate('/student');
+        onClose();
+        setCollegeId('');
+      } else {
+        setError(data.message || 'Login failed');
+      }
+    } catch (error) {
+      setError('Could not connect to server. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -62,85 +88,30 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
           </div>
 
           <form onSubmit={handleSubmit}>
+            {error && (
+              <div className="mb-4 p-3 rounded-md text-sm bg-red-100 text-red-800">
+                ❌ {error}
+              </div>
+            )}
+            
             <div className="mb-4">
               <label
-                htmlFor="branch"
+                htmlFor="college-id"
                 className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
               >
-                Branch
+                College ID
               </label>
-              <select
-                id="branch"
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-                className="w-full px-3 py-2 border border-[var(--secondary-text)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--highlight)] focus:border-transparent bg-[var(--background)] text-[var(--primary-text)] transition-colors duration-200"
-                required
-              >
-                <option value="">Select Branch</option>
-                <option value="CSE">Computer Science Engineering</option>
-                <option value="CSM">CSE (ARTIFICIAL INTELLIGENCE & MACHINE LEARNING)</option>
-                <option value="CSD">CSE (DATA SCIENCE)</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label
-                  htmlFor="year"
-                  className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
-                >
-                  Year
-                </label>
-                <select
-                  id="year"
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  className="w-full px-3 py-2 border border-[var(--secondary-text)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--highlight)] focus:border-transparent bg-[var(--background)] text-[var(--primary-text)] transition-colors duration-200"
-                  required
-                >
-                  <option value="">Year</option>
-                  <option value="1">1st Year</option>
-                  <option value="2">2nd Year</option>
-                  <option value="3">3rd Year</option>
-                  <option value="4">4th Year</option>
-                </select>
+              <div className="mb-2 text-xs text-[var(--secondary-text)]">
+                Format: 25F45A3307, 25F45A3302, etc.
               </div>
-
-              <div>
-                <label
-                  htmlFor="semester"
-                  className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
-                >
-                  Semester
-                </label>
-                <select
-                  id="semester"
-                  value={semester}
-                  onChange={(e) => setSemester(e.target.value)}
-                  className="w-full px-3 py-2 border border-[var(--secondary-text)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--highlight)] focus:border-transparent bg-[var(--background)] text-[var(--primary-text)] transition-colors duration-200"
-                  required
-                >
-                  <option value="">Sem</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label
-                htmlFor="hall-ticket"
-                className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
-              >
-                Hall Ticket Number
-              </label>
               <input
                 type="text"
-                id="hall-ticket"
-                value={hallTicket}
-                onChange={(e) => setHallTicket(e.target.value)}
+                id="college-id"
+                value={collegeId}
+                onChange={(e) => setCollegeId(e.target.value.toUpperCase())}
                 className="w-full px-3 py-2 border border-[var(--secondary-text)] rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--highlight)] focus:border-transparent bg-[var(--background)] text-[var(--primary-text)] transition-colors duration-200"
-                placeholder="Enter your hall ticket number"
+                placeholder="Enter your college ID (e.g., 25F45A3307)"
+                disabled={isLoading}
                 required
               />
             </div>
@@ -155,9 +126,17 @@ const StudentLoginModal: React.FC<StudentLoginModalProps> = ({ isOpen, onClose }
               </button>
               <button
                 type="submit"
-                className="flex-1 bg-[var(--highlight)] text-white py-2 px-4 rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--button)] transition-all duration-200 font-medium"
+                disabled={isLoading}
+                className="flex-1 bg-[var(--highlight)] text-white py-2 px-4 rounded-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--button)] transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Login
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Logging in...
+                  </span>
+                ) : (
+                  'Login'
+                )}
               </button>
             </div>
           </form>
