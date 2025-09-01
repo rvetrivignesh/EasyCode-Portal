@@ -34,31 +34,39 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ classId, onUploadSuccess }) =
     setError('');
     setMessage('');
 
+    console.log('📊 Starting upload:', { fileName: file.name, fileSize: file.size, classId });
+
     try {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('class_id', classId);
 
-      const response = await fetch('http://localhost:8000/upload-students', {
+      console.log('📤 Sending request to upload students...');
+      const response = await fetch('http://localhost:3001/api/upload-students', {
         method: 'POST',
         body: formData,
       });
 
       const result = await response.json();
+      console.log('📥 Upload response:', { status: response.status, result });
 
       if (response.ok) {
-        setMessage(`✅ Successfully uploaded ${result.students_count} students!`);
+        const skipMessage = result.skipped_count > 0 ? ` (${result.skipped_count} duplicates skipped)` : '';
+        setMessage(`✅ Successfully uploaded ${result.students_count} students!${skipMessage}`);
         setFile(null);
         // Reset file input
         const fileInput = document.getElementById('excel-file') as HTMLInputElement;
         if (fileInput) fileInput.value = '';
         
         // Call the success callback to refresh the students list
+        console.log('🔄 Calling onUploadSuccess callback...');
         onUploadSuccess();
       } else {
-        setError(result.detail || 'Upload failed');
+        console.error('❌ Upload failed:', result);
+        setError(result.detail || result.message || 'Upload failed');
       }
     } catch (error) {
+      console.error('❌ Upload error:', error);
       setError('Could not connect to server');
     } finally {
       setUploading(false);
@@ -78,8 +86,16 @@ const ExcelUpload: React.FC<ExcelUploadProps> = ({ classId, onUploadSuccess }) =
             htmlFor="excel-file"
             className="block text-sm font-medium text-[var(--secondary-text)] mb-2"
           >
-            Excel File (must contain: hallticket_no, name)
+            Excel File
           </label>
+          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
+            📋 <strong>Simple Format:</strong><br/>
+            • No headers needed - just 2 columns of data<br/>
+            • Column 1: College ID (e.g., 25F45A3301, 25F45A3302, etc.)<br/>
+            • Column 2: Student Name<br/>
+            • Duplicates will be automatically skipped<br/>
+            • Works with .xlsx and .xls files
+          </div>
           <input
             type="file"
             id="excel-file"
