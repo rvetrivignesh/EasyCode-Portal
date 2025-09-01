@@ -40,7 +40,8 @@ const AddClass: React.FC = () => {
     setMessage("");
 
     try {
-      const response = await fetch('http://localhost:3001/api/classes', {
+      // First, create the class
+      const classResponse = await fetch('http://localhost:3001/api/classes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,20 +54,55 @@ const AddClass: React.FC = () => {
         }),
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        setMessage("✅ Class added successfully!");
-        setFormData({
-          branch: "",
-          batch: "",
-          year: "",
-          semester: "",
-          excelFile: null,
-        });
-      } else {
-        const error = await response.json();
-        setMessage(`❌ Error: ${error.message}`);
+      if (!classResponse.ok) {
+        const error = await classResponse.json();
+        setMessage(`❌ Error creating class: ${error.message}`);
+        return;
       }
+
+      const classResult = await classResponse.json();
+      const classId = classResult.id;
+      
+      // If an Excel file is provided, upload the students
+      if (formData.excelFile) {
+        console.log('📊 Uploading students for new class:', classId);
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', formData.excelFile);
+        uploadFormData.append('class_id', classId.toString());
+
+        console.log('📤 Sending upload request...');
+        const uploadResponse = await fetch('http://localhost:3001/api/upload-students', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+
+        const uploadResult = await uploadResponse.json();
+        console.log('📥 Upload response:', { status: uploadResponse.status, result: uploadResult });
+
+        if (uploadResponse.ok) {
+          const skipMessage = uploadResult.skipped_count > 0 ? ` (${uploadResult.skipped_count} duplicates skipped)` : '';
+          setMessage(`✅ Class added successfully! ${uploadResult.students_count} students uploaded.${skipMessage}`);
+        } else {
+          console.error('❌ Upload failed:', uploadResult);
+          setMessage(`✅ Class added but student upload failed: ${uploadResult.detail || uploadResult.message || 'Upload error'}`);
+        }
+      } else {
+        setMessage("✅ Class added successfully! 0 students uploaded.");
+      }
+
+      // Reset form
+      setFormData({
+        branch: "",
+        batch: "",
+        year: "",
+        semester: "",
+        excelFile: null,
+      });
+      
+      // Reset file input
+      const fileInput = document.getElementById('excelFile') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
     } catch (error) {
       setMessage("❌ Error: Could not connect to server");
     } finally {
@@ -150,14 +186,28 @@ const AddClass: React.FC = () => {
       </div>
       <div>
         <label htmlFor="excelFile" className="block text-sm font-medium text-[var(--secondary-text)] mb-2">
-          Excel File
+          Excel File (Optional)
         </label>
+        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800">
+          📋 <strong>Simple Excel Format:</strong><br/>
+          • No headers needed - just 2 columns of data<br/>
+          • Column 1: College ID (e.g., 25F45A3301, 25F45A3302, etc.)<br/>
+          • Column 2: Student Name<br/>
+          • Duplicates will be automatically skipped<br/>
+          • Works with .xlsx and .xls files
+        </div>
         <input
           type="file"
           id="excelFile"
+          accept=".xlsx,.xls"
           onChange={handleChange}
           className="w-full text-sm text-[var(--secondary-text)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[var(--button)] file:text-white hover:file:bg-opacity-90"
         />
+        {formData.excelFile && (
+          <div className="mt-2 text-sm text-green-600">
+            ✅ File selected: {formData.excelFile.name}
+          </div>
+        )}
       </div>
       <div className="flex justify-center pt-2">
         <button
